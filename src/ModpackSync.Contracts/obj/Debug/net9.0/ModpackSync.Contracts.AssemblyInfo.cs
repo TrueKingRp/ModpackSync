@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ModpackSync.Contracts")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+43488c32105e99d0eb60b133db2c01d28a442826")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c6bc7b70bf6460e31c211bedba64a66c0cfe0458")]
 [assembly: System.Reflection.AssemblyProductAttribute("ModpackSync.Contracts")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ModpackSync.Contracts")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

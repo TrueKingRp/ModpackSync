@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ModpackSync.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "pack-list"
+    }
+  }
+}

@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ModpackSync.Contracts.Packs;
 
-namespace ModpackSync.Contracts.packs
+public sealed record PackManagerSettings
 {
-    internal class PackManagerSettings
-    {
-    }
+    public List<ModpackRegistration> Packs { get; init; } = [];
 }

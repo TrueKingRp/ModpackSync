@@ -1,5 +1,10 @@
-﻿using ModpackSync.Contracts.Packs;
+using System.Text.Json;
+using ModpackSync.Contracts.Manifests;
+using ModpackSync.Contracts.Packs;
+using ModpackSync.Contracts.Sync;
+using ModpackSync.Core.Manifests;
 using ModpackSync.Core.Packs;
+using ModpackSync.Core.Sync;
 
 var packManager = new PackManager();
 
@@ -7,7 +12,7 @@ try
 {
     await packManager.InitialiseAsync();
 
-    if (args.Length == 0)
+    if (args.Length < 1)
     {
         PrintUsage();
         return;
@@ -17,6 +22,10 @@ try
 
     switch (command)
     {
+        case "scan":
+            await RunScanAsync(args);
+            break;
+
         case "pack-add":
             await AddPackAsync(
                 packManager,
@@ -34,7 +43,7 @@ try
             break;
 
         case "pack-scan":
-            await ScanPackAsync(
+            await ScanRegisteredPackAsync(
                 packManager,
                 args);
             break;
@@ -54,6 +63,94 @@ catch (Exception ex)
     Console.Error.WriteLine($"Error: {ex.Message}");
 }
 
+static async Task RunScanAsync(string[] args)
+{
+    if (args.Length < 3)
+    {
+        Console.WriteLine(
+            "Usage: scan <pack name> <folder path>");
+
+        return;
+    }
+
+    string packName = args[1];
+    string folderPath = Path.GetFullPath(args[2]);
+
+    if (!Directory.Exists(folderPath))
+    {
+        throw new DirectoryNotFoundException(
+            $"The modpack folder does not exist: {folderPath}");
+    }
+
+    string manifestPath = Path.Combine(
+        folderPath,
+        "manifest.json");
+
+    string oldManifestPath = Path.Combine(
+        folderPath,
+        "OLDManifest.json");
+
+    if (File.Exists(oldManifestPath))
+    {
+        File.Delete(oldManifestPath);
+
+        Console.WriteLine(
+            $"Deleted previous old manifest: {oldManifestPath}");
+    }
+
+    if (File.Exists(manifestPath))
+    {
+        File.Move(
+            manifestPath,
+            oldManifestPath);
+
+        Console.WriteLine(
+            $"Renamed existing manifest to: {oldManifestPath}");
+    }
+
+    var builder = new ManifestBuilder();
+
+    Console.WriteLine($"Scanning: {folderPath}");
+
+    ModpackManifest newManifest =
+        await builder.BuildAsync(
+            packName,
+            folderPath);
+
+    await SaveManifestAsync(
+        manifestPath,
+        newManifest);
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"Files found: {newManifest.Files.Count}");
+
+    Console.WriteLine(
+        $"Manifest created: {manifestPath}");
+
+    if (!File.Exists(oldManifestPath))
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            "No previous manifest was available for comparison.");
+
+        PrintCurrentCategoryTotals(newManifest);
+        return;
+    }
+
+    ModpackManifest oldManifest =
+        await LoadManifestAsync(oldManifestPath);
+
+    var comparer = new ManifestComparer();
+
+    ManifestComparison comparison =
+        comparer.Compare(
+            oldManifest,
+            newManifest);
+
+    PrintComparison(comparison);
+}
+
 static async Task AddPackAsync(
     PackManager manager,
     string[] args)
@@ -63,6 +160,7 @@ static async Task AddPackAsync(
         Console.WriteLine(
             "Usage: pack-add <name> <folder path> " +
             "[Minecraft version] [loader] [loader version]");
+
         return;
     }
 
@@ -70,13 +168,19 @@ static async Task AddPackAsync(
     string folderPath = args[2];
 
     string? minecraftVersion =
-        args.Length >= 4 ? args[3] : null;
+        args.Length >= 4
+            ? args[3]
+            : null;
 
     string? modLoader =
-        args.Length >= 5 ? args[4] : null;
+        args.Length >= 5
+            ? args[4]
+            : null;
 
     string? modLoaderVersion =
-        args.Length >= 6 ? args[5] : null;
+        args.Length >= 6
+            ? args[5]
+            : null;
 
     ModpackRegistration pack =
         await manager.AddPackAsync(
@@ -86,12 +190,17 @@ static async Task AddPackAsync(
             modLoader,
             modLoaderVersion);
 
+    Console.WriteLine();
     Console.WriteLine("Pack registered.");
-    Console.WriteLine($"ID:      {pack.Id}");
-    Console.WriteLine($"Name:    {pack.Name}");
-    Console.WriteLine($"Path:    {pack.LocalPath}");
+    Console.WriteLine($"ID:        {pack.Id}");
+    Console.WriteLine($"Name:      {pack.Name}");
+    Console.WriteLine($"Path:      {pack.LocalPath}");
     Console.WriteLine(
-        $"Config:  {manager.SettingsFilePath}");
+        $"Minecraft: {pack.MinecraftVersion ?? "Not set"}");
+    Console.WriteLine(
+        $"Loader:    {FormatLoader(pack)}");
+    Console.WriteLine(
+        $"Registry:  {manager.SettingsFilePath}");
 }
 
 static void ListPacks(
@@ -104,6 +213,7 @@ static void ListPacks(
     {
         Console.WriteLine(
             "No modpacks are currently registered.");
+
         return;
     }
 
@@ -117,8 +227,8 @@ static void ListPacks(
         Console.WriteLine(
             new string('-', pack.Name.Length));
 
-        Console.WriteLine($"ID:   {pack.Id}");
-        Console.WriteLine($"Path: {pack.LocalPath}");
+        Console.WriteLine($"ID:        {pack.Id}");
+        Console.WriteLine($"Path:      {pack.LocalPath}");
 
         Console.WriteLine(
             $"Minecraft: {pack.MinecraftVersion ?? "Not set"}");
@@ -136,10 +246,13 @@ static async Task RemovePackAsync(
     string[] args)
 {
     if (args.Length < 2 ||
-        !Guid.TryParse(args[1], out Guid packId))
+        !Guid.TryParse(
+            args[1],
+            out Guid packId))
     {
         Console.WriteLine(
             "Usage: pack-remove <pack ID>");
+
         return;
     }
 
@@ -152,15 +265,18 @@ static async Task RemovePackAsync(
             : "No registered pack was found with that ID.");
 }
 
-static async Task ScanPackAsync(
+static async Task ScanRegisteredPackAsync(
     PackManager manager,
     string[] args)
 {
     if (args.Length < 2 ||
-        !Guid.TryParse(args[1], out Guid packId))
+        !Guid.TryParse(
+            args[1],
+            out Guid packId))
     {
         Console.WriteLine(
             "Usage: pack-scan <pack ID>");
+
         return;
     }
 
@@ -171,27 +287,224 @@ static async Task ScanPackAsync(
     {
         Console.WriteLine(
             "No registered pack was found with that ID.");
+
         return;
     }
 
-    Console.WriteLine(
-        $"Scanning {pack.Name}...");
+    string manifestPath = Path.Combine(
+        pack.LocalPath,
+        "manifest.json");
 
-    var manifest =
+    string oldManifestPath = Path.Combine(
+        pack.LocalPath,
+        "OLDManifest.json");
+
+    Console.WriteLine(
+        $"Scanning registered pack: {pack.Name}");
+
+    ModpackManifest newManifest =
         await manager.ScanPackAsync(packId);
 
     Console.WriteLine();
     Console.WriteLine(
-        $"Files found: {manifest.Files.Count}");
+        $"Files found: {newManifest.Files.Count}");
 
     Console.WriteLine(
-        $"Manifest: {Path.Combine(pack.LocalPath, "manifest.json")}");
+        $"Manifest created: {manifestPath}");
+
+    if (!File.Exists(oldManifestPath))
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            "No previous manifest was available for comparison.");
+
+        PrintCurrentCategoryTotals(newManifest);
+        return;
+    }
+
+    ModpackManifest oldManifest =
+        await LoadManifestAsync(oldManifestPath);
+
+    var comparer = new ManifestComparer();
+
+    ManifestComparison comparison =
+        comparer.Compare(
+            oldManifest,
+            newManifest);
+
+    PrintComparison(comparison);
+}
+
+static async Task SaveManifestAsync(
+    string manifestPath,
+    ModpackManifest manifest)
+{
+    var jsonOptions =
+        new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+    string json =
+        JsonSerializer.Serialize(
+            manifest,
+            jsonOptions);
+
+    await File.WriteAllTextAsync(
+        manifestPath,
+        json);
+}
+
+static async Task<ModpackManifest> LoadManifestAsync(
+    string manifestPath)
+{
+    if (!File.Exists(manifestPath))
+    {
+        throw new FileNotFoundException(
+            "Manifest file was not found.",
+            manifestPath);
+    }
+
+    string json =
+        await File.ReadAllTextAsync(
+            manifestPath);
+
+    ModpackManifest? manifest =
+        JsonSerializer.Deserialize<ModpackManifest>(
+            json);
+
+    return manifest
+        ?? throw new InvalidDataException(
+            $"Could not read manifest: {manifestPath}");
+}
+
+static void PrintComparison(
+    ManifestComparison comparison)
+{
+    Console.WriteLine();
+    Console.WriteLine("Changes since previous scan");
+    Console.WriteLine("---------------------------");
+
+    Console.WriteLine(
+        $"Added:     {comparison.AddedFiles.Count}");
+
+    Console.WriteLine(
+        $"Modified:  {comparison.ModifiedFiles.Count}");
+
+    Console.WriteLine(
+        $"Deleted:   {comparison.DeletedFiles.Count}");
+
+    Console.WriteLine(
+        $"Unchanged: {comparison.UnchangedFiles.Count}");
+
+    PrintCategory(
+        "Mods",
+        comparison.Mods);
+
+    PrintCategory(
+        "Blockbuster models",
+        comparison.BlockbusterModels);
+
+    PrintCategory(
+        "Chameleon models",
+        comparison.ChameleonModels);
+
+    PrintChangedFiles(
+        "Added files",
+        comparison.AddedFiles);
+
+    PrintChangedFiles(
+        "Modified files",
+        comparison.ModifiedFiles);
+
+    PrintChangedFiles(
+        "Deleted files",
+        comparison.DeletedFiles);
+}
+
+static void PrintCategory(
+    string categoryName,
+    CategoryComparison comparison)
+{
+    Console.WriteLine();
+    Console.WriteLine(categoryName);
+    Console.WriteLine(
+        new string('-', categoryName.Length));
+
+    Console.WriteLine(
+        $"Total:     {comparison.Total}");
+
+    Console.WriteLine(
+        $"Added:     {comparison.Added}");
+
+    Console.WriteLine(
+        $"Modified:  {comparison.Modified}");
+
+    Console.WriteLine(
+        $"Deleted:   {comparison.Deleted}");
+
+    Console.WriteLine(
+        $"Unchanged: {comparison.Unchanged}");
+}
+
+static void PrintChangedFiles(
+    string heading,
+    IReadOnlyList<ManifestFile> files)
+{
+    if (files.Count == 0)
+    {
+        return;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine(heading);
+    Console.WriteLine(
+        new string('-', heading.Length));
+
+    foreach (ManifestFile file in files)
+    {
+        Console.WriteLine(
+            file.RelativePath);
+    }
+}
+
+static void PrintCurrentCategoryTotals(
+    ModpackManifest manifest)
+{
+    int mods =
+        manifest.Files.Count(file =>
+            FileCategoryClassifier.GetCategory(
+                file.RelativePath) ==
+            FileCategory.Mod);
+
+    int blockbusterModels =
+        manifest.Files.Count(file =>
+            FileCategoryClassifier.GetCategory(
+                file.RelativePath) ==
+            FileCategory.BlockbusterModel);
+
+    int chameleonModels =
+        manifest.Files.Count(file =>
+            FileCategoryClassifier.GetCategory(
+                file.RelativePath) ==
+            FileCategory.ChameleonModel);
+
+    Console.WriteLine();
+    Console.WriteLine("Current pack metrics");
+    Console.WriteLine("--------------------");
+    Console.WriteLine(
+        $"Mods:               {mods}");
+    Console.WriteLine(
+        $"Blockbuster models: {blockbusterModels}");
+    Console.WriteLine(
+        $"Chameleon models:   {chameleonModels}");
 }
 
 static string FormatLoader(
     ModpackRegistration pack)
 {
-    if (string.IsNullOrWhiteSpace(pack.ModLoader))
+    if (string.IsNullOrWhiteSpace(
+            pack.ModLoader))
     {
         return "Not set";
     }
@@ -202,39 +515,62 @@ static string FormatLoader(
         return pack.ModLoader;
     }
 
-    return $"{pack.ModLoader} {pack.ModLoaderVersion}";
+    return
+        $"{pack.ModLoader} {pack.ModLoaderVersion}";
 }
 
 static string FormatDate(
     DateTimeOffset? date)
 {
-    return date?.ToLocalTime()
+    return date?
+        .ToLocalTime()
         .ToString("dd MMM yyyy HH:mm")
         ?? "Never";
 }
 
 static void PrintUsage()
 {
-    Console.WriteLine("ModpackSync Pack Manager");
+    Console.WriteLine(
+        "ModpackSync CLI");
+
     Console.WriteLine();
 
-    Console.WriteLine("Register a pack:");
     Console.WriteLine(
-        "pack-add <name> <folder> " +
+        "Direct folder scan:");
+
+    Console.WriteLine(
+        "scan <pack name> <folder path>");
+
+    Console.WriteLine();
+
+    Console.WriteLine(
+        "Register a pack:");
+
+    Console.WriteLine(
+        "pack-add <name> <folder path> " +
         "[Minecraft version] [loader] [loader version]");
 
     Console.WriteLine();
 
-    Console.WriteLine("List packs:");
-    Console.WriteLine("pack-list");
+    Console.WriteLine(
+        "List registered packs:");
+
+    Console.WriteLine(
+        "pack-list");
 
     Console.WriteLine();
 
-    Console.WriteLine("Scan a registered pack:");
-    Console.WriteLine("pack-scan <pack ID>");
+    Console.WriteLine(
+        "Scan a registered pack:");
+
+    Console.WriteLine(
+        "pack-scan <pack ID>");
 
     Console.WriteLine();
 
-    Console.WriteLine("Remove a registered pack:");
-    Console.WriteLine("pack-remove <pack ID>");
+    Console.WriteLine(
+        "Remove a registered pack:");
+
+    Console.WriteLine(
+        "pack-remove <pack ID>");
 }

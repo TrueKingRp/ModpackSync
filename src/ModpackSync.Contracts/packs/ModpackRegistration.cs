@@ -1,12 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace ModpackSync.Contracts.Packs;
 
-namespace ModpackSync.Contracts.packs
+public sealed record ModpackRegistration
 {
-    internal class ModpackRegistration
-    {
-    }
+    public Guid Id { get; init; } = Guid.NewGuid();
+
+    public required string Name { get; init; }
+
+    public required string LocalPath { get; init; }
+
+    public string? MinecraftVersion { get; init; }
+
+    public string? ModLoader { get; init; }
+
+    public string? ModLoaderVersion { get; init; }
+
+    public DateTimeOffset CreatedAt { get; init; } =
+        DateTimeOffset.UtcNow;
+
+    public DateTimeOffset? LastScannedAt { get; init; }
 }
