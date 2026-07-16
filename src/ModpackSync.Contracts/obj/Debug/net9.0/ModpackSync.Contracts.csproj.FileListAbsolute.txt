@@ -1,0 +1,12 @@
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\bin\Debug\net9.0\ModpackSync.Contracts.deps.json
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\bin\Debug\net9.0\ModpackSync.Contracts.dll
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\bin\Debug\net9.0\ModpackSync.Contracts.pdb
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.AssemblyInfoInputs.cache
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.AssemblyInfo.cs
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.csproj.CoreCompileInputs.cache
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.sourcelink.json
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.dll
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\refint\ModpackSync.Contracts.dll
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ModpackSync.Contracts.pdb
+F:\MockpackSync\ModpackSync\src\ModpackSync.Contracts\obj\Debug\net9.0\ref\ModpackSync.Contracts.dll
