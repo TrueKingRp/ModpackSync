@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ModpackSync.Cli")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c6bc7b70bf6460e31c211bedba64a66c0cfe0458")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2ec717876a640eba536df10c436d19f1bf76ef4c")]
 [assembly: System.Reflection.AssemblyProductAttribute("ModpackSync.Cli")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ModpackSync.Cli")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
