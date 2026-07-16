@@ -1,0 +1,55 @@
+# .NET build output
+bin/
+obj/
+out/
+publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# VS Code and Rider
+.vscode/
+.idea/
+
+# Tests
+TestResults/
+coverage/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Application storage
+data/
+storage/
+uploads/
+downloads/
+temp/
+modpacks/
+
+# Secrets
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+
+# Logs
+logs/
+*.log
+
+# Keys and certificates
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Windows
+Thumbs.db
+desktop.ini
