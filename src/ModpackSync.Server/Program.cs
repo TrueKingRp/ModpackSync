@@ -28,6 +28,14 @@ builder.Services.AddScoped<
     IPackService,
     PackService>();
 
+builder.Services.AddScoped<
+    IVersionRepository,
+    VersionRepository>();
+
+builder.Services.AddScoped<
+    IVersionService,
+    VersionService>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
