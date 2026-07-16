@@ -27,7 +27,6 @@ public sealed class ManifestBuilder
 
         string fullRootPath = Path.GetFullPath(rootDirectory);
 
-
         if (!Directory.Exists(fullRootPath))
         {
             throw new DirectoryNotFoundException(
@@ -76,7 +75,9 @@ public sealed class ManifestBuilder
             Version = version,
             CreatedAt = DateTimeOffset.UtcNow,
             Files = files
-                .OrderBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(
+                    file => file.RelativePath,
+                    StringComparer.OrdinalIgnoreCase)
                 .ToList()
         };
     }
@@ -97,6 +98,8 @@ public sealed class ManifestBuilder
             stream,
             cancellationToken);
 
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        return Convert
+            .ToHexString(hash)
+            .ToLowerInvariant();
     }
 }

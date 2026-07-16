@@ -66,8 +66,71 @@ public sealed class ManifestComparer
             AddedFiles = SortByPath(addedFiles),
             ModifiedFiles = SortByPath(modifiedFiles),
             DeletedFiles = SortByPath(deletedFiles),
-            UnchangedFiles = SortByPath(unchangedFiles)
+            UnchangedFiles = SortByPath(unchangedFiles),
+
+            Mods = CreateCategoryComparison(
+                FileCategory.Mod,
+                addedFiles,
+                modifiedFiles,
+                deletedFiles,
+                unchangedFiles),
+
+            BlockbusterModels = CreateCategoryComparison(
+                FileCategory.BlockbusterModel,
+                addedFiles,
+                modifiedFiles,
+                deletedFiles,
+                unchangedFiles),
+
+            ChameleonModels = CreateCategoryComparison(
+                FileCategory.ChameleonModel,
+                addedFiles,
+                modifiedFiles,
+                deletedFiles,
+                unchangedFiles)
         };
+    }
+
+    private static CategoryComparison CreateCategoryComparison(
+        FileCategory category,
+        IReadOnlyCollection<ManifestFile> addedFiles,
+        IReadOnlyCollection<ManifestFile> modifiedFiles,
+        IReadOnlyCollection<ManifestFile> deletedFiles,
+        IReadOnlyCollection<ManifestFile> unchangedFiles)
+    {
+        int added = CountCategory(
+            addedFiles,
+            category);
+
+        int modified = CountCategory(
+            modifiedFiles,
+            category);
+
+        int deleted = CountCategory(
+            deletedFiles,
+            category);
+
+        int unchanged = CountCategory(
+            unchangedFiles,
+            category);
+
+        return new CategoryComparison
+        {
+            Total = added + modified + unchanged,
+            Added = added,
+            Modified = modified,
+            Deleted = deleted,
+            Unchanged = unchanged
+        };
+    }
+
+    private static int CountCategory(
+        IEnumerable<ManifestFile> files,
+        FileCategory category)
+    {
+        return files.Count(file =>
+            FileCategoryClassifier.GetCategory(
+                file.RelativePath) == category);
     }
 
     private static IReadOnlyList<ManifestFile> SortByPath(

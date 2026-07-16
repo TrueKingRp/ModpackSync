@@ -1,19 +1,12 @@
 ﻿using System.Text.Json;
 using ModpackSync.Contracts.Manifests;
+using ModpackSync.Contracts.Sync;
 using ModpackSync.Core.Manifests;
 using ModpackSync.Core.Sync;
 
-if (args.Length < 2)
+if (args.Length < 1)
 {
-    Console.WriteLine("Commands:");
-    Console.WriteLine();
-    Console.WriteLine("Create a manifest:");
-    Console.WriteLine(
-        "ModpackSync.Cli scan <pack name> <folder path>");
-    Console.WriteLine();
-    Console.WriteLine("Compare two manifests:");
-    Console.WriteLine(
-        "ModpackSync.Cli compare <old manifest> <new manifest>");
+    PrintUsage();
     return;
 }
 
@@ -27,13 +20,13 @@ try
             await RunScanAsync(args);
             break;
 
-        case "compare":
-            await RunCompareAsync(args);
-            break;
-
         default:
             Console.Error.WriteLine(
                 $"Unknown command: {command}");
+
+            Console.WriteLine();
+
+            PrintUsage();
             break;
     }
 }
@@ -49,11 +42,18 @@ static async Task RunScanAsync(string[] args)
     {
         Console.WriteLine(
             "Usage: ModpackSync.Cli scan <pack name> <folder path>");
+
         return;
     }
 
     string packName = args[1];
-    string folderPath = args[2];
+    string folderPath = Path.GetFullPath(args[2]);
+
+    if (!Directory.Exists(folderPath))
+    {
+        throw new DirectoryNotFoundException(
+            $"The modpack folder does not exist: {folderPath}");
+    }
 
     string manifestPath = Path.Combine(
         folderPath,
@@ -85,65 +85,52 @@ static async Task RunScanAsync(string[] args)
 
     Console.WriteLine($"Scanning: {folderPath}");
 
-    ModpackManifest manifest = await builder.BuildAsync(
-        packName,
-        folderPath);
+    ModpackManifest newManifest =
+        await builder.BuildAsync(
+            packName,
+            folderPath);
 
-    var options = new JsonSerializerOptions
+    var jsonOptions = new JsonSerializerOptions
     {
         WriteIndented = true
     };
 
-    string json = JsonSerializer.Serialize(
-        manifest,
-        options);
+    string manifestJson = JsonSerializer.Serialize(
+        newManifest,
+        jsonOptions);
 
     await File.WriteAllTextAsync(
         manifestPath,
-        json);
+        manifestJson);
 
     Console.WriteLine();
-    Console.WriteLine($"Files found: {manifest.Files.Count}");
-    Console.WriteLine($"Manifest created: {manifestPath}");
-}
+    Console.WriteLine(
+        $"Files found: {newManifest.Files.Count}");
 
-static async Task RunCompareAsync(string[] args)
-{
-    if (args.Length < 3)
+    Console.WriteLine(
+        $"Manifest created: {manifestPath}");
+
+    if (!File.Exists(oldManifestPath))
     {
+        Console.WriteLine();
         Console.WriteLine(
-            "Usage: ModpackSync.Cli compare <old manifest> <new manifest>");
+            "No previous manifest was available for comparison.");
+
+        PrintCurrentCategoryTotals(newManifest);
         return;
     }
-
-    string oldManifestPath = args[1];
-    string newManifestPath = args[2];
 
     ModpackManifest oldManifest =
         await LoadManifestAsync(oldManifestPath);
 
-    ModpackManifest newManifest =
-        await LoadManifestAsync(newManifestPath);
-
     var comparer = new ManifestComparer();
 
-    var comparison = comparer.Compare(
-        oldManifest,
-        newManifest);
+    ManifestComparison comparison =
+        comparer.Compare(
+            oldManifest,
+            newManifest);
 
-    Console.WriteLine();
-    Console.WriteLine(
-        $"Added:     {comparison.AddedFiles.Count}");
-    Console.WriteLine(
-        $"Modified:  {comparison.ModifiedFiles.Count}");
-    Console.WriteLine(
-        $"Deleted:   {comparison.DeletedFiles.Count}");
-    Console.WriteLine(
-        $"Unchanged: {comparison.UnchangedFiles.Count}");
-
-    PrintFiles("Added files", comparison.AddedFiles);
-    PrintFiles("Modified files", comparison.ModifiedFiles);
-    PrintFiles("Deleted files", comparison.DeletedFiles);
+    PrintComparison(comparison);
 }
 
 static async Task<ModpackManifest> LoadManifestAsync(
@@ -156,7 +143,8 @@ static async Task<ModpackManifest> LoadManifestAsync(
             manifestPath);
     }
 
-    string json = await File.ReadAllTextAsync(manifestPath);
+    string json =
+        await File.ReadAllTextAsync(manifestPath);
 
     ModpackManifest? manifest =
         JsonSerializer.Deserialize<ModpackManifest>(json);
@@ -166,7 +154,76 @@ static async Task<ModpackManifest> LoadManifestAsync(
             $"Could not read manifest: {manifestPath}");
 }
 
-static void PrintFiles(
+static void PrintComparison(
+    ManifestComparison comparison)
+{
+    Console.WriteLine();
+    Console.WriteLine("Changes since previous scan");
+    Console.WriteLine("---------------------------");
+
+    Console.WriteLine(
+        $"Added:     {comparison.AddedFiles.Count}");
+
+    Console.WriteLine(
+        $"Modified:  {comparison.ModifiedFiles.Count}");
+
+    Console.WriteLine(
+        $"Deleted:   {comparison.DeletedFiles.Count}");
+
+    Console.WriteLine(
+        $"Unchanged: {comparison.UnchangedFiles.Count}");
+
+    PrintCategory(
+        "Mods",
+        comparison.Mods);
+
+    PrintCategory(
+        "Blockbuster models",
+        comparison.BlockbusterModels);
+
+    PrintCategory(
+        "Chameleon models",
+        comparison.ChameleonModels);
+
+    PrintChangedFiles(
+        "Added files",
+        comparison.AddedFiles);
+
+    PrintChangedFiles(
+        "Modified files",
+        comparison.ModifiedFiles);
+
+    PrintChangedFiles(
+        "Deleted files",
+        comparison.DeletedFiles);
+}
+
+static void PrintCategory(
+    string categoryName,
+    CategoryComparison comparison)
+{
+    Console.WriteLine();
+    Console.WriteLine(categoryName);
+    Console.WriteLine(
+        new string('-', categoryName.Length));
+
+    Console.WriteLine(
+        $"Total:     {comparison.Total}");
+
+    Console.WriteLine(
+        $"Added:     {comparison.Added}");
+
+    Console.WriteLine(
+        $"Modified:  {comparison.Modified}");
+
+    Console.WriteLine(
+        $"Deleted:   {comparison.Deleted}");
+
+    Console.WriteLine(
+        $"Unchanged: {comparison.Unchanged}");
+}
+
+static void PrintChangedFiles(
     string heading,
     IReadOnlyList<ManifestFile> files)
 {
@@ -184,4 +241,44 @@ static void PrintFiles(
     {
         Console.WriteLine(file.RelativePath);
     }
+}
+
+static void PrintCurrentCategoryTotals(
+    ModpackManifest manifest)
+{
+    int mods = manifest.Files.Count(file =>
+        FileCategoryClassifier.GetCategory(
+            file.RelativePath) == FileCategory.Mod);
+
+    int blockbusterModels = manifest.Files.Count(file =>
+        FileCategoryClassifier.GetCategory(
+            file.RelativePath) == FileCategory.BlockbusterModel);
+
+    int chameleonModels = manifest.Files.Count(file =>
+        FileCategoryClassifier.GetCategory(
+            file.RelativePath) == FileCategory.ChameleonModel);
+
+    Console.WriteLine();
+    Console.WriteLine("Current pack metrics");
+    Console.WriteLine("--------------------");
+    Console.WriteLine($"Mods:               {mods}");
+    Console.WriteLine($"Blockbuster models: {blockbusterModels}");
+    Console.WriteLine($"Chameleon models:   {chameleonModels}");
+}
+
+static void PrintUsage()
+{
+    Console.WriteLine("Usage:");
+    Console.WriteLine();
+
+    Console.WriteLine(
+        "ModpackSync.Cli scan <pack name> <folder path>");
+
+    Console.WriteLine();
+
+    Console.WriteLine("Example:");
+
+    Console.WriteLine(
+        "ModpackSync.Cli scan \"Tensura Slime\" " +
+        "\"F:\\PrismLauncher\\instances\\Tensura (Slime)\\minecraft\"");
 }

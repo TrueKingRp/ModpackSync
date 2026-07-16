@@ -6,7 +6,8 @@ public sealed record ModpackManifest
 
     public int Version { get; init; }
 
-    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; init; } =
+        DateTimeOffset.UtcNow;
 
     public required IReadOnlyList<ManifestFile> Files { get; init; }
 }
