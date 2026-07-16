@@ -2,7 +2,7 @@
   "profiles": {
     "ModpackSync.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "version-create f454b430-3738-4b3b-bc07-12e66fef07ca \"1.0.0\" \"Initial Tensura release\""
+      "commandLineArgs": "instances-list"
     }
   }
 }
