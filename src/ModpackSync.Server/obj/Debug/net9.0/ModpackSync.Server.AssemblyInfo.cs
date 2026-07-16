@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ModpackSync.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c438c9cb7258856a28eee171f80766d83e6313c3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+43488c32105e99d0eb60b133db2c01d28a442826")]
 [assembly: System.Reflection.AssemblyProductAttribute("ModpackSync.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ModpackSync.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
