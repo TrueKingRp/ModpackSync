@@ -2,7 +2,7 @@
   "profiles": {
     "ModpackSync.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "\"Test Pack\" \"F:\\PrismLauncher\\instances\\Tensura (Slime)\\minecraft\""
+      "commandLineArgs": "scan \"Tensura Slime\" \"F:\\PrismLauncher\\instances\\Tensura (Slime)\\minecraft\""
     }
   }
 }

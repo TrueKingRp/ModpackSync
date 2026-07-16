@@ -27,6 +27,7 @@ public sealed class ManifestBuilder
 
         string fullRootPath = Path.GetFullPath(rootDirectory);
 
+
         if (!Directory.Exists(fullRootPath))
         {
             throw new DirectoryNotFoundException(
@@ -48,8 +49,11 @@ public sealed class ManifestBuilder
                 .Replace('\\', '/');
 
             if (relativePath.Equals(
-        "manifest.json",
-        StringComparison.OrdinalIgnoreCase))
+                    "manifest.json",
+                    StringComparison.OrdinalIgnoreCase) ||
+                relativePath.Equals(
+                    "OLDManifest.json",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
