@@ -1,12 +1,49 @@
+using Microsoft.EntityFrameworkCore;
+using ModpackSync.Server.Data;
+using ModpackSync.Server.Repositories;
+using ModpackSync.Server.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+string dataDirectory = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "data");
+
+Directory.CreateDirectory(dataDirectory);
+
+string databasePath = Path.Combine(
+    dataDirectory,
+    "modpacksync.db");
+
+builder.Services.AddDbContext<ModpackSyncDbContext>(
+    options =>
+        options.UseSqlite(
+            $"Data Source={databasePath}"));
+
+builder.Services.AddScoped<
+    IPackRepository,
+    PackRepository>();
+
+builder.Services.AddScoped<
+    IPackService,
+    PackService>();
+
+builder.Services.AddControllers();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+using (IServiceScope scope =
+       app.Services.CreateScope())
+{
+    ModpackSyncDbContext database =
+        scope.ServiceProvider
+            .GetRequiredService<ModpackSyncDbContext>();
+
+    await database.Database.EnsureCreatedAsync();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -14,28 +51,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.MapControllers();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapGet(
+    "/",
+    () => Results.Ok(
+        new
+        {
+            name = "ModpackSync Server",
+            status = "Running",
+            database = databasePath
+        }));
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
