@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ModpackSync.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "scan \"Tensura Slime\" \"F:\\PrismLauncher\\instances\\Tensura (Slime)\\minecraft\""
+    }
+  }
+}

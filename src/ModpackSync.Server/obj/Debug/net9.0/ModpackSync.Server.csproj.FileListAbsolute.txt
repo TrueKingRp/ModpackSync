@@ -35,3 +35,4 @@ F:\MockpackSync\ModpackSync\src\ModpackSync.Server\obj\Debug\net9.0\refint\Modpa
 F:\MockpackSync\ModpackSync\src\ModpackSync.Server\obj\Debug\net9.0\ModpackSync.Server.pdb
 F:\MockpackSync\ModpackSync\src\ModpackSync.Server\obj\Debug\net9.0\ModpackSync.Server.genruntimeconfig.cache
 F:\MockpackSync\ModpackSync\src\ModpackSync.Server\obj\Debug\net9.0\ref\ModpackSync.Server.dll
+F:\MockpackSync\ModpackSync\src\ModpackSync.Server\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
