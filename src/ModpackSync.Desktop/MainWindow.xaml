@@ -1,12 +1,154 @@
 ﻿<Window x:Class="ModpackSync.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ModpackSync.Desktop"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="ModpackSync"
+        Width="1100"
+        Height="700"
+        MinWidth="850"
+        MinHeight="500"
+        WindowStartupLocation="CenterScreen">
 
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Instances folder settings -->
+        <Border Grid.Row="0"
+                Padding="16"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Text="Prism Launcher instances"/>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="InstancesDirectoryTextBox"
+                             Grid.Column="0"
+                             MinHeight="34"
+                             Padding="8,5"
+                             VerticalContentAlignment="Center"
+                             IsReadOnly="True"/>
+
+                    <Button x:Name="BrowseButton"
+                            Grid.Column="2"
+                            MinWidth="90"
+                            MinHeight="34"
+                            Content="Browse..."
+                            Click="BrowseButton_Click"/>
+
+                    <Button x:Name="RefreshButton"
+                            Grid.Column="4"
+                            MinWidth="90"
+                            MinHeight="34"
+                            Content="Refresh"
+                            Click="RefreshButton_Click"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Instance list -->
+        <Border Grid.Row="2"
+                BorderBrush="#D0D0D0"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <DataGrid x:Name="InstancesDataGrid"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      SelectionChanged="InstancesDataGrid_SelectionChanged">
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Pack"
+                                        Binding="{Binding Name}"
+                                        Width="2*"/>
+
+                    <DataGridTextColumn Header="Minecraft folder"
+                                        Binding="{Binding MinecraftPath}"
+                                        Width="4*"/>
+
+                    <DataGridTextColumn Header="Status"
+                                        Binding="{Binding Status}"
+                                        Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Selected pack actions -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal">
+
+            <Button x:Name="ManagePackButton"
+                    MinWidth="120"
+                    MinHeight="36"
+                    Margin="0,0,10,0"
+                    Content="Manage Pack"
+                    IsEnabled="False"
+                    Click="ManagePackButton_Click"/>
+
+            <Button x:Name="ScanPackButton"
+                    MinWidth="100"
+                    MinHeight="36"
+                    Margin="0,0,10,0"
+                    Content="Scan"
+                    IsEnabled="False"
+                    Click="ScanPackButton_Click"/>
+
+            <Button x:Name="CreateVersionButton"
+                    MinWidth="130"
+                    MinHeight="36"
+                    Margin="0,0,10,0"
+                    Content="Create Version"
+                    IsEnabled="False"
+                    Click="CreateVersionButton_Click"/>
+
+            <Button x:Name="ViewVersionsButton"
+                    MinWidth="120"
+                    MinHeight="36"
+                    Content="View Versions"
+                    IsEnabled="False"
+                    Click="ViewVersionsButton_Click"/>
+        </StackPanel>
+
+        <!-- Status -->
+        <Border Grid.Row="6"
+                Padding="10"
+                Background="{StaticResource WindowBackgroundBrush}"
+                CornerRadius="4">
+
+            <TextBlock x:Name="StatusTextBlock"
+                       Text="Ready."
+                       TextWrapping="Wrap"/>
+        </Border>
     </Grid>
 </Window>
