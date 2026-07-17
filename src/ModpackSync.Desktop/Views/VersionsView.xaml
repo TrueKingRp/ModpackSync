@@ -209,9 +209,11 @@
             <Button x:Name="DeleteVersionButton"
                     MinWidth="110"
                     Height="40"
+                    Margin="10,0,0,0"
                     Style="{StaticResource StandardButtonStyle}"
                     Content="Delete"
-                    IsEnabled="False"/>
+                    IsEnabled="False"
+                    Click="DeleteVersionButton_Click"/>
 
         </StackPanel>
 

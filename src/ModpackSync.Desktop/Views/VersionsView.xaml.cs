@@ -189,6 +189,62 @@ public partial class VersionsView : UserControl
             hasSelection;
     }
 
+    private async void DeleteVersionButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        PackVersion? selectedVersion =
+            VersionsDataGrid.SelectedItem
+            as PackVersion;
+
+        if (selectedVersion is null)
+        {
+            return;
+        }
+
+        MessageBoxResult result =
+            MessageBox.Show(
+                $"Delete version '{selectedVersion.VersionLabel}'?\n\n" +
+                "This permanently removes the local version.",
+                "Delete Version",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            SetBusyState(
+                true,
+                $"Deleting {selectedVersion.VersionLabel}...");
+
+            bool removed =
+                await _versionManager.RemoveVersionAsync(
+                    selectedVersion.Id);
+
+            if (!removed)
+            {
+                throw new InvalidOperationException(
+                    "The version could not be deleted.");
+            }
+
+            RefreshVersions();
+
+            SetBusyState(
+                false,
+                $"Deleted {selectedVersion.VersionLabel}.");
+        }
+        catch (Exception ex)
+        {
+            ShowError(
+                "Unable to delete version.",
+                ex);
+        }
+    }
+
     private void RefreshVersions()
     {
         _versions.Clear();
@@ -198,11 +254,11 @@ public partial class VersionsView : UserControl
                 _pack.Id);
 
         foreach (PackVersion version
-                 in versions.OrderByDescending(
-                     item => item.CreatedAt))
+         in _versionManager
+             .GetVersions(_pack.Id)
+             .OrderByDescending(v => v.CreatedAt))
         {
-            _versions.Add(
-                version);
+            _versions.Add(version);
         }
 
         VersionsDataGrid.SelectedItem =
