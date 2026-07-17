@@ -20,8 +20,4 @@
     <ProjectReference Include="..\ModpackSync.Contracts\ModpackSync.Contracts.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Storage\" />
-  </ItemGroup>
-
 </Project>

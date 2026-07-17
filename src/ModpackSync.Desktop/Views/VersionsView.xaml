@@ -1,0 +1,255 @@
+﻿<UserControl x:Class="ModpackSync.Desktop.Views.VersionsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource WindowBackgroundBrush}">
+
+    <Grid Margin="28">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="18"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0"
+                    Width="42"
+                    Height="38"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Content="←"
+                    FontSize="18"
+                    Click="BackButton_Click"/>
+
+            <StackPanel Grid.Column="2">
+
+                <TextBlock Text="Versions"
+                           FontSize="30"
+                           FontWeight="Bold"/>
+
+                <TextBlock x:Name="PackNameTextBlock"
+                           Margin="0,5,0,0"
+                           FontSize="13"
+                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+            </StackPanel>
+
+            <Button x:Name="RefreshVersionsButton"
+                    Grid.Column="3"
+                    MinWidth="110"
+                    Height="38"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Content="Refresh"
+                    Click="RefreshVersionsButton_Click"/>
+
+        </Grid>
+
+        <!-- Version list -->
+        <Border Grid.Row="2"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                ClipToBounds="True">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0"
+                      Margin="18,15">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal">
+
+                        <TextBlock Text="Local versions"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"/>
+
+                        <Border Margin="10,0,0,0"
+                                Padding="8,3"
+                                VerticalAlignment="Center"
+                                Background="#29342B"
+                                CornerRadius="10">
+
+                            <TextBlock Text="{Binding ElementName=VersionsDataGrid,
+                                                    Path=Items.Count}"
+                                       FontSize="11"
+                                       Foreground="{StaticResource PrimaryHoverBrush}"/>
+
+                        </Border>
+
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               VerticalAlignment="Center"
+                               Text="Select a version to view its details"
+                               FontSize="12"
+                               Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                </Grid>
+
+                <DataGrid x:Name="VersionsDataGrid"
+                          Grid.Row="1"
+                          IsReadOnly="True"
+                          AlternationCount="2"
+                          SelectionChanged="VersionsDataGrid_SelectionChanged">
+
+                    <DataGrid.Columns>
+
+                        <DataGridTextColumn Header="Version"
+                                            Binding="{Binding VersionLabel}"
+                                            Width="1.5*"/>
+
+                        <DataGridTextColumn Header="Created"
+                                            Binding="{Binding CreatedAt,
+                                                              StringFormat={}{0:dd MMM yyyy HH:mm}}"
+                                            Width="2*"/>
+
+                        <DataGridTemplateColumn Header="Status"
+                                                Width="140">
+
+                            <DataGridTemplateColumn.CellTemplate>
+
+                                <DataTemplate>
+
+                                    <Border Padding="9,4"
+                                            HorizontalAlignment="Left"
+                                            Background="#29342B"
+                                            CornerRadius="10">
+
+                                        <TextBlock FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource PrimaryHoverBrush}">
+
+                                            <TextBlock.Style>
+
+                                                <Style TargetType="TextBlock">
+
+                                                    <Setter Property="Text"
+                                                            Value="Local"/>
+
+                                                    <Style.Triggers>
+
+                                                        <DataTrigger Binding="{Binding IsPublished}"
+                                                                     Value="True">
+
+                                                            <Setter Property="Text"
+                                                                    Value="Published"/>
+
+                                                        </DataTrigger>
+
+                                                    </Style.Triggers>
+
+                                                </Style>
+
+                                            </TextBlock.Style>
+
+                                        </TextBlock>
+
+                                    </Border>
+
+                                </DataTemplate>
+
+                            </DataGridTemplateColumn.CellTemplate>
+
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Release notes"
+                                            Binding="{Binding ReleaseNotes}"
+                                            Width="3*"/>
+
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+            </Grid>
+
+        </Border>
+
+        <!-- Actions -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal">
+
+            <Button x:Name="CreateVersionButton"
+                    MinWidth="130"
+                    Height="40"
+                    Margin="0,0,10,0"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="Create Version"
+                    Click="CreateVersionButton_Click"/>
+
+            <Button x:Name="PublishVersionButton"
+                    MinWidth="110"
+                    Height="40"
+                    Margin="0,0,10,0"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Content="Publish"
+                    IsEnabled="False"/>
+
+            <Button x:Name="DeleteVersionButton"
+                    MinWidth="110"
+                    Height="40"
+                    Margin="10,0,0,0"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Content="Delete"
+                    IsEnabled="False"
+                    Click="DeleteVersionButton_Click"/>
+
+        </StackPanel>
+
+        <!-- Status -->
+        <Border Grid.Row="6"
+                Padding="13,10"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <Grid>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Ellipse Grid.Column="0"
+                         Width="8"
+                         Height="8"
+                         VerticalAlignment="Center"
+                         Fill="{StaticResource PrimaryBrush}"/>
+
+                <TextBlock x:Name="StatusTextBlock"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           Text="Ready."
+                           FontSize="12"
+                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+            </Grid>
+
+        </Border>
+
+    </Grid>
+
+</UserControl>
