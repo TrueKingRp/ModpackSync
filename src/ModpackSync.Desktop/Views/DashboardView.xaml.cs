@@ -321,29 +321,35 @@ public partial class DashboardView : UserControl
             return;
         }
 
-        string versionLabel =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter the new version label:",
-                $"Create version — {selectedItem.Name}",
-                "1.0.0");
-
-        if (string.IsNullOrWhiteSpace(
-                versionLabel))
-        {
-            return;
-        }
-
-        string releaseNotes =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter release notes:",
-                $"Release notes — {versionLabel}",
-                string.Empty);
-
         try
         {
+            await _versionManager.InitialiseAsync();
+
+            IReadOnlyList<PackVersion> existingVersions =
+                _versionManager.GetVersions(
+                    selectedItem.ManagedPack.Id);
+
+            var dialog =
+                new CreateVersionWindow(
+                    selectedItem.Name,
+                    existingVersions.Select(
+                        version =>
+                            version.VersionLabel))
+                {
+                    Owner = Window.GetWindow(this)
+                };
+
+            bool? result =
+                dialog.ShowDialog();
+
+            if (result != true)
+            {
+                return;
+            }
+
             SetBusyState(
                 true,
-                $"Creating version {versionLabel}...");
+                $"Creating version {dialog.VersionLabel}...");
 
             await _packManager.ScanPackAsync(
                 selectedItem.ManagedPack.Id);
@@ -351,8 +357,8 @@ public partial class DashboardView : UserControl
             PackVersion version =
                 await _versionManager.CreateVersionAsync(
                     selectedItem.ManagedPack,
-                    versionLabel,
-                    releaseNotes);
+                    dialog.VersionLabel,
+                    dialog.ReleaseNotes);
 
             SetBusyState(
                 false,

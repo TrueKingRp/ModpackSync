@@ -103,32 +103,36 @@ public partial class VersionsView : UserControl
     }
 
     private async void CreateVersionButton_Click(
-        object sender,
-        RoutedEventArgs e)
+     object sender,
+     RoutedEventArgs e)
     {
-        string versionLabel =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter the new version label:",
-                $"Create version — {_pack.Name}",
-                "1.0.0");
-
-        if (string.IsNullOrWhiteSpace(
-                versionLabel))
-        {
-            return;
-        }
-
-        string releaseNotes =
-            Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter release notes:",
-                $"Release notes — {versionLabel}",
-                string.Empty);
-
         try
         {
+            IReadOnlyList<PackVersion> existingVersions =
+                _versionManager.GetVersions(
+                    _pack.Id);
+
+            var dialog =
+                new CreateVersionWindow(
+                    _pack.Name,
+                    existingVersions.Select(
+                        version =>
+                            version.VersionLabel))
+                {
+                    Owner = Window.GetWindow(this)
+                };
+
+            bool? result =
+                dialog.ShowDialog();
+
+            if (result != true)
+            {
+                return;
+            }
+
             SetBusyState(
                 true,
-                $"Creating version {versionLabel}...");
+                $"Creating version {dialog.VersionLabel}...");
 
             await _packManager.ScanPackAsync(
                 _pack.Id);
@@ -136,16 +140,23 @@ public partial class VersionsView : UserControl
             PackVersion version =
                 await _versionManager.CreateVersionAsync(
                     _pack,
-                    versionLabel,
-                    releaseNotes);
+                    dialog.VersionLabel,
+                    dialog.ReleaseNotes);
 
             RefreshVersions();
 
             VersionsDataGrid.SelectedItem =
                 _versions.FirstOrDefault(
                     item =>
-                        item.VersionLabel ==
-                        version.VersionLabel);
+                        item.VersionLabel.Equals(
+                            version.VersionLabel,
+                            StringComparison.OrdinalIgnoreCase));
+
+            if (VersionsDataGrid.SelectedItem is not null)
+            {
+                VersionsDataGrid.ScrollIntoView(
+                    VersionsDataGrid.SelectedItem);
+            }
 
             SetBusyState(
                 false,
