@@ -9,14 +9,23 @@ namespace ModpackSync.Desktop;
 public partial class MainWindow : Window
 {
     private readonly DashboardView _dashboardView;
+    private readonly SettingsView _settingsView;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        _dashboardView = new DashboardView();
+        _dashboardView =
+            new DashboardView();
+
         _dashboardView.OpenVersionsRequested +=
             DashboardView_OpenVersionsRequested;
+
+        _settingsView =
+            new SettingsView();
+
+        _settingsView.ConnectionStatusChanged +=
+            SettingsView_ConnectionStatusChanged;
 
         ShowDashboard();
     }
@@ -46,18 +55,43 @@ public partial class MainWindow : Window
             return;
         }
 
-        ShowVersions(selectedPack);
+        ShowVersions(
+            selectedPack);
+    }
+
+    private void SettingsNavigationButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowSettings();
     }
 
     private void DashboardView_OpenVersionsRequested(
         ModpackRegistration pack)
     {
-        ShowVersions(pack);
+        ShowVersions(
+            pack);
+    }
+
+    private void SettingsView_ConnectionStatusChanged(
+        bool isConnected)
+    {
+        ServerStatusEllipse.Fill =
+            (Brush)FindResource(
+                isConnected
+                    ? "SuccessBrush"
+                    : "ErrorBrush");
+
+        ServerStatusTextBlock.Text =
+            isConnected
+                ? "Connected"
+                : "Not connected";
     }
 
     private void ShowDashboard()
     {
-        MainContentHost.Content = _dashboardView;
+        MainContentHost.Content =
+            _dashboardView;
 
         SetNavigationSelection(
             DashboardNavigationButton);
@@ -67,7 +101,8 @@ public partial class MainWindow : Window
         ModpackRegistration pack)
     {
         var versionsView =
-            new VersionsView(pack);
+            new VersionsView(
+                pack);
 
         versionsView.BackRequested +=
             ShowDashboard;
@@ -79,22 +114,34 @@ public partial class MainWindow : Window
             VersionsNavigationButton);
     }
 
+    private void ShowSettings()
+    {
+        MainContentHost.Content =
+            _settingsView;
+
+        SetNavigationSelection(
+            SettingsNavigationButton);
+    }
+
     private void SetNavigationSelection(
         Button selectedButton)
     {
-        DashboardNavigationButton.Background =
-            Brushes.Transparent;
+        Button[] navigationButtons =
+        [
+            DashboardNavigationButton,
+            VersionsNavigationButton,
+            SettingsNavigationButton
+        ];
 
-        DashboardNavigationButton.Foreground =
-            (Brush)FindResource(
-                "SecondaryTextBrush");
+        foreach (Button button in navigationButtons)
+        {
+            button.Background =
+                Brushes.Transparent;
 
-        VersionsNavigationButton.Background =
-            Brushes.Transparent;
-
-        VersionsNavigationButton.Foreground =
-            (Brush)FindResource(
-                "SecondaryTextBrush");
+            button.Foreground =
+                (Brush)FindResource(
+                    "SecondaryTextBrush");
+        }
 
         selectedButton.Background =
             (Brush)FindResource(

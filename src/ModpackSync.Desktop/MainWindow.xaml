@@ -67,10 +67,11 @@
                             Content="☁   Server"
                             IsEnabled="False"/>
 
-                    <Button Margin="0,6,0,0"
+                    <Button x:Name="SettingsNavigationButton"
+                            Margin="0,6,0,0"
                             Style="{StaticResource NavigationButtonStyle}"
                             Content="⚙   Settings"
-                            IsEnabled="False"/>
+                            Click="SettingsNavigationButton_Click"/>
 
                 </StackPanel>
 
@@ -90,15 +91,17 @@
                         <StackPanel Margin="0,8,0,0"
                                     Orientation="Horizontal">
 
-                            <Ellipse Width="8"
-                                     Height="8"
-                                     Margin="0,0,8,0"
-                                     VerticalAlignment="Center"
-                                     Fill="{StaticResource WarningBrush}"/>
+                            <Ellipse x:Name="ServerStatusEllipse"
+                                 Width="8"
+                                 Height="8"
+                                 Margin="0,0,8,0"
+                                 VerticalAlignment="Center"
+                                 Fill="{StaticResource WarningBrush}"/>
 
-                            <TextBlock Text="Not connected"
-                                       FontSize="12"
-                                       Foreground="{StaticResource SecondaryTextBrush}"/>
+                                                    <TextBlock x:Name="ServerStatusTextBlock"
+                                   Text="Not connected"
+                                   FontSize="12"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
 
                         </StackPanel>
 

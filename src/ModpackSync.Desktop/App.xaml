@@ -797,6 +797,57 @@
             </Style.Triggers>
 
         </Style>
+        
+        <Style TargetType="PasswordBox">
+
+            <Setter Property="Background"
+            Value="{StaticResource ControlBackgroundBrush}"/>
+
+            <Setter Property="Foreground"
+            Value="{StaticResource TextBrush}"/>
+
+            <Setter Property="CaretBrush"
+            Value="{StaticResource TextBrush}"/>
+
+            <Setter Property="BorderBrush"
+            Value="{StaticResource BorderBrush}"/>
+
+            <Setter Property="BorderThickness"
+            Value="1"/>
+
+            <Setter Property="Padding"
+            Value="10,7"/>
+
+            <Setter Property="FontSize"
+            Value="13"/>
+
+            <Setter Property="VerticalContentAlignment"
+            Value="Center"/>
+
+            <Style.Triggers>
+
+                <Trigger Property="IsKeyboardFocused"
+                 Value="True">
+
+                    <Setter Property="BorderBrush"
+                    Value="{StaticResource PrimaryBrush}"/>
+
+                </Trigger>
+
+                <Trigger Property="IsEnabled"
+                 Value="False">
+
+                    <Setter Property="Background"
+                    Value="#202320"/>
+
+                    <Setter Property="Foreground"
+                    Value="{StaticResource DisabledTextBrush}"/>
+
+                </Trigger>
+
+            </Style.Triggers>
+
+        </Style>
 
     </Application.Resources>
 
