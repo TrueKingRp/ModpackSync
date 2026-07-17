@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ModpackSync.Core.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b36b146170c6bfd1d13115b2a7370c922694fd3c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+18d48ad44c17b24b7738e3d380372d6d3fac0e73")]
 [assembly: System.Reflection.AssemblyProductAttribute("ModpackSync.Core.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ModpackSync.Core.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

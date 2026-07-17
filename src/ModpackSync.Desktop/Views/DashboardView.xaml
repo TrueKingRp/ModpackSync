@@ -245,19 +245,23 @@
                     IsEnabled="False"
                     Click="ViewVersionsButton_Click"/>
 
-            <Button Grid.Column="8"
+            <Button x:Name="DownloadButton"
+                    Grid.Column="8"
                     MinWidth="105"
                     Height="40"
                     Style="{StaticResource StandardButtonStyle}"
                     Content="Download"
-                    IsEnabled="False"/>
+                    IsEnabled="False"
+                    Click="DownloadButton_Click"/>
 
-            <Button Grid.Column="10"
+            <Button x:Name="UploadButton"
+                    Grid.Column="10"
                     MinWidth="105"
                     Height="40"
                     Style="{StaticResource PrimaryButtonStyle}"
                     Content="Upload"
-                    IsEnabled="False"/>
+                    IsEnabled="False"
+                    Click="UploadButton_Click"/>
 
         </Grid>
 

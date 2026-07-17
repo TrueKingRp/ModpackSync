@@ -22,6 +22,7 @@ public sealed class VersionRepository : IVersionRepository
             await _database.Versions
                 .AsNoTracking()
                 .Include(version => version.Files)
+                    .ThenInclude(file => file.StoredFile)
                 .Where(version => version.PackId == packId)
                 .ToListAsync(cancellationToken);
 
@@ -37,6 +38,7 @@ public sealed class VersionRepository : IVersionRepository
         return await _database.Versions
             .AsNoTracking()
             .Include(version => version.Files)
+                .ThenInclude(file => file.StoredFile)
             .FirstOrDefaultAsync(
                 version => version.Id == versionId,
                 cancellationToken);
@@ -53,6 +55,7 @@ public sealed class VersionRepository : IVersionRepository
         return await _database.Versions
             .AsNoTracking()
             .Include(version => version.Files)
+                .ThenInclude(file => file.StoredFile)
             .FirstOrDefaultAsync(
                 version =>
                     version.PackId == packId &&
@@ -64,9 +67,11 @@ public sealed class VersionRepository : IVersionRepository
         ServerPackVersion version,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(version);
+        ArgumentNullException.ThrowIfNull(
+            version);
 
-        _database.Versions.Add(version);
+        _database.Versions.Add(
+            version);
 
         await _database.SaveChangesAsync(
             cancellationToken);

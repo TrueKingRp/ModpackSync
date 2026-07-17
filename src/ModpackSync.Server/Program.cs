@@ -59,6 +59,8 @@ builder.Services.AddSingleton<
     IBlobStorageService,
     BlobStorageService>();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<
     ModpackSyncDbContext>(
     options =>
@@ -93,6 +95,14 @@ builder.Services.AddScoped<
     IVersionFileService,
     VersionFileService>();
 
+builder.Services.AddScoped<
+    IVersionManifestService,
+    VersionManifestService>();
+
+builder.Services.AddScoped<
+    IVersionArchiveService,
+    VersionArchiveService>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
@@ -115,6 +125,10 @@ using (IServiceScope scope =
         scope.ServiceProvider
             .GetRequiredService<
                 IBlobStorageService>();
+
+    app.Logger.LogInformation(
+        "Database path: {DatabasePath}",
+        databasePath);
 
     app.Logger.LogInformation(
         "Blob storage directory: {BlobStorageDirectory}",
