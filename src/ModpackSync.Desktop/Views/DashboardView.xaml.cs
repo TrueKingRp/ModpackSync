@@ -15,6 +15,8 @@ using ModpackSync.Core.Instances;
 using ModpackSync.Core.Packs;
 using ModpackSync.Core.Settings;
 using ModpackSync.Core.Versions;
+using System.ComponentModel;
+using System.Windows.Data;
 using ModpackSync.Desktop.Models;
 
 namespace ModpackSync.Desktop.Views;
@@ -26,11 +28,13 @@ public partial class DashboardView : UserControl
     private readonly InstanceSettingsManager _instanceSettingsManager;
     private readonly InstanceDiscoveryService _instanceDiscoveryService;
     private readonly ServerSettingsManager _serverSettingsManager;
-    private readonly HttpClient _httpClient;
+    private HttpClient _httpClient;
 
     private readonly JsonSerializerOptions _jsonOptions;
 
     private readonly ObservableCollection<InstanceListItem> _instances = [];
+
+    private readonly ICollectionView _instancesView;
 
     private bool _isInitialised;
 
@@ -64,8 +68,15 @@ public partial class DashboardView : UserControl
                 PropertyNameCaseInsensitive = true
             };
 
+        _instancesView =
+            CollectionViewSource.GetDefaultView(
+                _instances);
+
+        _instancesView.Filter =
+            FilterInstance;
+
         InstancesDataGrid.ItemsSource =
-            _instances;
+            _instancesView;
 
         Loaded += DashboardView_Loaded;
     }
@@ -208,15 +219,18 @@ public partial class DashboardView : UserControl
                 .Settings
                 .InstancesDirectory;
 
-        if (string.IsNullOrWhiteSpace(
-                instancesDirectory))
+        if (!string.IsNullOrWhiteSpace(
+        selectedPath))
         {
-            StatusTextBlock.Text =
-                "Choose your Prism Launcher instances folder.";
-
-            UpdateActionButtons();
-            return;
+            SelectInstanceByPath(
+                selectedPath);
         }
+
+        _instancesView.Refresh();
+
+        UpdateActionButtons();
+
+        await Task.CompletedTask;
 
         IReadOnlyList<LauncherInstance> discoveredInstances =
             _instanceDiscoveryService.Discover(
@@ -494,7 +508,7 @@ public partial class DashboardView : UserControl
             int uploadedCount = 0;
 
             foreach (ManifestFile manifestFile
-                     in manifest.Files)
+         in manifest.Files)
             {
                 if (!missingHashes.Contains(
                         manifestFile.Sha256))
@@ -517,8 +531,9 @@ public partial class DashboardView : UserControl
 
                 uploadedCount++;
 
-                SetBusyState(
-                    true,
+                ShowProgress(
+                    uploadedCount,
+                    missingHashes.Count,
                     $"Uploading file {uploadedCount} of " +
                     $"{missingHashes.Count}: " +
                     $"{manifestFile.RelativePath}");
@@ -528,9 +543,8 @@ public partial class DashboardView : UserControl
                     sourcePath);
             }
 
-            SetBusyState(
-                true,
-                "Attaching the manifest to the server version...");
+            ShowIndeterminateProgress(
+                "Sending the manifest to the server...");
 
             await AttachVersionFilesAsync(
                 serverVersion.Id,
@@ -538,11 +552,14 @@ public partial class DashboardView : UserControl
 
             SetBusyState(
                 false,
-                $"Uploaded {localVersion.VersionLabel}. " +
-                $"{uploadedCount} new files were transferred.");
+                $"Version {localVersion.VersionLabel} was uploaded. " +
+                "The server is processing its manifest.");
 
             MessageBox.Show(
-                $"Version {localVersion.VersionLabel} was uploaded.",
+                $"Version {localVersion.VersionLabel} was uploaded." +
+                $"{Environment.NewLine}{Environment.NewLine}" +
+                "The server is processing the manifest in the background. " +
+                "The version may take a few minutes to become available.",
                 "ModpackSync",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -682,19 +699,37 @@ public partial class DashboardView : UserControl
                 "No server URL has been configured.");
         }
 
-        if (!serverUrl.EndsWith(
-                "/",
-                StringComparison.Ordinal))
-        {
-            serverUrl += "/";
-        }
+        serverUrl =
+            serverUrl.TrimEnd('/') + "/";
 
-        _httpClient.BaseAddress =
+        var requestedBaseAddress =
             new Uri(
                 serverUrl,
                 UriKind.Absolute);
 
-        _httpClient.DefaultRequestHeaders.Clear();
+        // HttpClient.BaseAddress cannot be changed after the first
+        // request has been sent. Recreate the client only if the
+        // configured server address has changed.
+        if (_httpClient.BaseAddress is null)
+        {
+            _httpClient.BaseAddress =
+                requestedBaseAddress;
+        }
+        else if (_httpClient.BaseAddress !=
+                 requestedBaseAddress)
+        {
+            _httpClient.Dispose();
+
+            _httpClient =
+                new HttpClient
+                {
+                    BaseAddress =
+                        requestedBaseAddress
+                };
+        }
+
+        _httpClient.DefaultRequestHeaders.Authorization =
+            null;
 
         string apiKey =
             _serverSettingsManager.Settings.ApiKey;
@@ -856,35 +891,78 @@ public partial class DashboardView : UserControl
         GetMissingHashesAsync(
             IEnumerable<string> hashes)
     {
-        string json =
-            JsonSerializer.Serialize(
-                hashes
-                    .Distinct(
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToArray(),
-                _jsonOptions);
+        string[] distinctHashes =
+            hashes
+                .Where(
+                    hash =>
+                        !string.IsNullOrWhiteSpace(hash))
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
-        using var content =
-            new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
+        var missingHashes =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
 
-        using HttpResponseMessage response =
-            await _httpClient.PostAsync(
-                "api/files/check",
-                content);
+        const int batchSize =
+            1000;
 
-        await EnsureSuccessAsync(
-            response,
-            "The server could not check existing files.");
+        for (int offset = 0;
+             offset < distinctHashes.Length;
+             offset += batchSize)
+        {
+            string[] batch =
+                distinctHashes
+                    .Skip(offset)
+                    .Take(batchSize)
+                    .ToArray();
 
-        FileCheckResponse result =
-            await DeserializeResponseAsync<FileCheckResponse>(
-                response);
+            ShowProgress(
+                Math.Min(
+                    offset + batch.Length,
+                    distinctHashes.Length),
+                distinctHashes.Length,
+                $"Checking files on the server: " +
+                $"{Math.Min(offset + batch.Length, distinctHashes.Length)} " +
+                $"of {distinctHashes.Length}");
 
-        return result.MissingHashes.ToHashSet(
-            StringComparer.OrdinalIgnoreCase);
+            string json =
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        Sha256Hashes =
+                            batch
+                    },
+                    _jsonOptions);
+
+            using var content =
+                new StringContent(
+                    json,
+                    Encoding.UTF8,
+                    "application/json");
+
+            using HttpResponseMessage response =
+                await _httpClient.PostAsync(
+                    "api/files/check",
+                    content);
+
+            await EnsureSuccessAsync(
+                response,
+                "The server could not check existing files.");
+
+            FileCheckResponse result =
+                await DeserializeResponseAsync<FileCheckResponse>(
+                    response);
+
+            foreach (string missingHash
+                     in result.MissingHashes)
+            {
+                missingHashes.Add(
+                    missingHash);
+            }
+        }
+
+        return missingHashes;
     }
 
     private async Task UploadFileAsync(
@@ -923,9 +1001,29 @@ public partial class DashboardView : UserControl
         Guid serverVersionId,
         IReadOnlyList<ManifestFile> files)
     {
+        var request =
+            new
+            {
+                Files =
+                    files.Select(
+                        file =>
+                            new
+                            {
+                                RelativePath =
+                                    file.RelativePath,
+
+                                Sha256 =
+                                    file.Sha256,
+
+                                Size =
+                                    file.Size
+                            })
+                        .ToArray()
+            };
+
         string json =
             JsonSerializer.Serialize(
-                files,
+                request,
                 _jsonOptions);
 
         using var content =
@@ -1058,6 +1156,116 @@ public partial class DashboardView : UserControl
         return fileName;
     }
 
+    private static string FormatFileSize(
+    long byteCount)
+    {
+        string[] units =
+        [
+            "B",
+        "KB",
+        "MB",
+        "GB",
+        "TB"
+        ];
+
+        double size = byteCount;
+        int unit = 0;
+
+        while (size >= 1024 &&
+               unit < units.Length - 1)
+        {
+            size /= 1024;
+            unit++;
+        }
+
+        return $"{size:0.##} {units[unit]}";
+    }
+
+    private bool FilterInstance(
+    object item)
+    {
+        if (item is not InstanceListItem instance)
+        {
+            return false;
+        }
+
+        string searchText =
+            PackSearchTextBox.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(
+                searchText))
+        {
+            return true;
+        }
+
+        return ContainsSearchText(
+                   instance.Name,
+                   searchText) ||
+               ContainsSearchText(
+                   instance.MinecraftPath,
+                   searchText) ||
+               ContainsSearchText(
+                   instance.Status,
+                   searchText);
+    }
+
+    private static bool ContainsSearchText(
+        string? value,
+        string searchText)
+    {
+        return !string.IsNullOrWhiteSpace(value) &&
+               value.Contains(
+                   searchText,
+                   StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void PackSearchTextBox_TextChanged(
+        object sender,
+        TextChangedEventArgs e)
+    {
+        bool hasSearchText =
+            !string.IsNullOrWhiteSpace(
+                PackSearchTextBox.Text);
+
+        SearchPlaceholderTextBlock.Visibility =
+            hasSearchText
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+        ClearSearchButton.Visibility =
+            hasSearchText
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+        _instancesView.Refresh();
+
+        /*
+         * A selected row may become hidden after filtering.
+         * Clear the selection when that happens so the action
+         * buttons do not operate on an invisible pack.
+         */
+        InstanceListItem? selectedItem =
+            GetSelectedInstance();
+
+        if (selectedItem is not null &&
+            !_instancesView.Contains(
+                selectedItem))
+        {
+            InstancesDataGrid.SelectedItem =
+                null;
+        }
+
+        UpdateActionButtons();
+    }
+
+    private void ClearSearchButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        PackSearchTextBox.Clear();
+        PackSearchTextBox.Focus();
+    }
+
     private void InstancesDataGrid_SelectionChanged(
         object sender,
         SelectionChangedEventArgs e)
@@ -1123,12 +1331,67 @@ public partial class DashboardView : UserControl
             matchingItem);
     }
 
+    private void ShowProgress(
+    long completed,
+    long total,
+    string message)
+    {
+        StatusTextBlock.Text =
+            message;
+
+        OperationProgressBar.Visibility =
+            Visibility.Visible;
+
+        OperationProgressBar.IsIndeterminate =
+            total <= 0;
+
+        if (total <= 0)
+        {
+            return;
+        }
+
+        OperationProgressBar.Minimum = 0;
+        OperationProgressBar.Maximum = total;
+        OperationProgressBar.Value =
+            Math.Clamp(completed, 0, total);
+    }
+
+    private void ShowIndeterminateProgress(
+        string message)
+    {
+        StatusTextBlock.Text =
+            message;
+
+        OperationProgressBar.Visibility =
+            Visibility.Visible;
+
+        OperationProgressBar.IsIndeterminate =
+            true;
+    }
+
+    private void HideProgress()
+    {
+        OperationProgressBar.IsIndeterminate =
+            false;
+
+        OperationProgressBar.Value =
+            0;
+
+        OperationProgressBar.Visibility =
+            Visibility.Collapsed;
+    }
+
     private void SetBusyState(
         bool isBusy,
         string message)
     {
         StatusTextBlock.Text =
             message;
+
+        if (!isBusy)
+        {
+            HideProgress();
+        }
 
         BrowseButton.IsEnabled =
             !isBusy;
