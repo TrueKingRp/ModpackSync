@@ -130,12 +130,32 @@ public partial class VersionsView : UserControl
                 return;
             }
 
+            var contentDialog =
+                new SelectPackContentWindow(
+                    _pack.LocalPath)
+                {
+                    Owner =
+                        Window.GetWindow(this)
+                };
+
+            bool? contentResult =
+                contentDialog.ShowDialog();
+
+            if (contentResult != true)
+            {
+                StatusTextBlock.Text =
+                    "Version creation cancelled.";
+
+                return;
+            }
+
             SetBusyState(
                 true,
                 $"Creating version {dialog.VersionLabel}...");
 
             await _packManager.ScanPackAsync(
-                _pack.Id);
+                _pack.Id,
+                contentDialog.Selection);
 
             PackVersion version =
                 await _versionManager.CreateVersionAsync(
@@ -187,6 +207,27 @@ public partial class VersionsView : UserControl
 
         DeleteVersionButton.IsEnabled =
             hasSelection;
+    }
+
+    private void PublishVersionButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        PackVersion? selectedVersion =
+            VersionsDataGrid.SelectedItem
+            as PackVersion;
+
+        if (selectedVersion is null)
+        {
+            return;
+        }
+
+        MessageBox.Show(
+            $"Publishing '{selectedVersion.VersionLabel}' " +
+            "has not been connected yet.",
+            "ModpackSync",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private async void DeleteVersionButton_Click(

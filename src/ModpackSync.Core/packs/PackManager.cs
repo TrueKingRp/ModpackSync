@@ -242,6 +242,85 @@ public sealed class PackManager
         return manifest;
     }
 
+    public async Task<ModpackManifest> ScanPackAsync(
+    Guid packId,
+    PackContentSelection selection,
+    CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            selection);
+
+        ModpackRegistration pack =
+            GetPack(packId)
+            ?? throw new KeyNotFoundException(
+                $"No registered pack exists with ID '{packId}'.");
+
+        if (!Directory.Exists(pack.LocalPath))
+        {
+            throw new DirectoryNotFoundException(
+                $"The modpack folder no longer exists: {pack.LocalPath}");
+        }
+
+        string manifestPath =
+            Path.Combine(
+                pack.LocalPath,
+                "manifest.json");
+
+        string oldManifestPath =
+            Path.Combine(
+                pack.LocalPath,
+                "OLDManifest.json");
+
+        if (File.Exists(oldManifestPath))
+        {
+            File.Delete(oldManifestPath);
+        }
+
+        if (File.Exists(manifestPath))
+        {
+            File.Move(
+                manifestPath,
+                oldManifestPath);
+        }
+
+        var manifestBuilder =
+            new ManifestBuilder();
+
+        ModpackManifest manifest =
+            await manifestBuilder.BuildAsync(
+                pack.Name,
+                pack.LocalPath,
+                selection,
+                cancellationToken: cancellationToken);
+
+        string manifestJson =
+            JsonSerializer.Serialize(
+                manifest,
+                _jsonOptions);
+
+        await File.WriteAllTextAsync(
+            manifestPath,
+            manifestJson,
+            cancellationToken);
+
+        int packIndex =
+            _settings.Packs.FindIndex(
+                savedPack =>
+                    savedPack.Id == packId);
+
+        _settings.Packs[packIndex] =
+            pack with
+            {
+                LastScannedAt =
+                    DateTimeOffset.UtcNow
+            };
+
+        await SaveAsync(
+            cancellationToken);
+
+        return manifest;
+    }
+
     public async Task SaveAsync(
         CancellationToken cancellationToken = default)
     {

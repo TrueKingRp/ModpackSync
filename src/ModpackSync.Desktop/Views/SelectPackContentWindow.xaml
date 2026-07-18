@@ -1,0 +1,291 @@
+﻿<Window x:Class="ModpackSync.Desktop.Views.SelectPackContentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ModpackSync.Desktop.Views"
+        Title="Select Pack Content"
+        Width="860"
+        Height="680"
+        MinWidth="700"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource WindowBackgroundBrush}"
+        Foreground="{StaticResource TextBrush}">
+
+    <Grid Margin="20">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0">
+
+            <TextBlock Text="Select pack content"
+                       FontSize="22"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TextBrush}"/>
+
+            <TextBlock Margin="0,6,0,0"
+                       Text="Choose which files and folders should be included. Expand a folder to customise its immediate contents."
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource SecondaryTextBrush}"/>
+
+        </StackPanel>
+
+        <!-- Preset buttons -->
+        <StackPanel Grid.Row="1"
+                    Margin="0,16,0,12"
+                    Orientation="Horizontal">
+
+            <Button Width="130"
+                    Height="34"
+                    Margin="0,0,8,0"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Click="SelectRecommendedButton_Click"
+                    Content="Recommended"/>
+
+            <Button Width="90"
+                    Height="34"
+                    Margin="0,0,8,0"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Click="SelectAllButton_Click"
+                    Content="Select all"/>
+
+            <Button Width="90"
+                    Height="34"
+                    Style="{StaticResource StandardButtonStyle}"
+                    Click="SelectNoneButton_Click"
+                    Content="Select none"/>
+
+        </StackPanel>
+
+        <!-- Content panel -->
+        <Border Grid.Row="2"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                ClipToBounds="True">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Column headings -->
+                <Border Grid.Row="0"
+                        Padding="14,12"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="0,0,0,1">
+
+                    <Grid Margin="28,0,8,0">
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Name"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="Type"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                        <TextBlock Grid.Column="2"
+                                   Text="Files"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                        <TextBlock Grid.Column="3"
+                                   Text="Size"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                    </Grid>
+
+                </Border>
+
+                <!-- Content tree -->
+                <TreeView x:Name="ContentTreeView"
+                          Grid.Row="1"
+                          Padding="8"
+                          Background="{StaticResource PanelBrush}"
+                          Foreground="{StaticResource TextBrush}"
+                          BorderThickness="0">
+
+                    <TreeView.Resources>
+
+                        <Style TargetType="TreeViewItem">
+
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource TextBrush}"/>
+
+                            <Setter Property="Background"
+                                    Value="Transparent"/>
+
+                            <Setter Property="Padding"
+                                    Value="2"/>
+
+                            <Setter Property="Margin"
+                                    Value="0,1"/>
+
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Stretch"/>
+
+                            <Setter Property="IsExpanded"
+                                    Value="False"/>
+
+                            <Style.Triggers>
+
+                                <Trigger Property="IsMouseOver"
+                                         Value="True">
+
+                                    <Setter Property="Background"
+                                            Value="{StaticResource PrimaryHoverBrush}"/>
+
+                                </Trigger>
+
+                                <Trigger Property="IsSelected"
+                                         Value="True">
+
+                                    <Setter Property="Background"
+                                            Value="#29342B"/>
+
+                                    <Setter Property="Foreground"
+                                            Value="{StaticResource TextBrush}"/>
+
+                                </Trigger>
+
+                            </Style.Triggers>
+
+                        </Style>
+
+                        <HierarchicalDataTemplate DataType="{x:Type local:PackContentItem}"
+                                                  ItemsSource="{Binding Children}">
+
+                            <Grid Margin="0,4"
+                                  MinHeight="26">
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="120"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+
+                                    <CheckBox Margin="0,0,8,0"
+                                              VerticalAlignment="Center"
+                                              IsThreeState="{Binding CanHaveChildren}"
+                                              IsChecked="{Binding IsIncluded,
+                                                                  Mode=TwoWay,
+                                                                  UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <TextBlock VerticalAlignment="Center"
+                                               Text="{Binding Name}"
+                                               Foreground="{StaticResource TextBrush}"/>
+
+                                </StackPanel>
+
+                                <TextBlock Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding EntryType}"
+                                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                                <TextBlock Grid.Column="2"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding FileCount,
+                                                          StringFormat={}{0:N0}}"
+                                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                                <TextBlock Grid.Column="3"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding FormattedSize}"
+                                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                            </Grid>
+
+                        </HierarchicalDataTemplate>
+
+                    </TreeView.Resources>
+
+                </TreeView>
+
+            </Grid>
+
+        </Border>
+
+        <!-- Footer -->
+        <Border Grid.Row="3"
+                Margin="0,16,0,0"
+                Padding="13,10"
+                Background="{StaticResource PanelBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6">
+
+            <Grid>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Ellipse Grid.Column="0"
+                         Width="8"
+                         Height="8"
+                         VerticalAlignment="Center"
+                         Fill="{StaticResource PrimaryBrush}"/>
+
+                <TextBlock x:Name="SelectionSummaryTextBlock"
+                           Grid.Column="2"
+                           VerticalAlignment="Center"
+                           Text="No items selected."
+                           FontSize="12"
+                           Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                <Button Grid.Column="3"
+                        Width="100"
+                        Height="36"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource StandardButtonStyle}"
+                        Click="CancelButton_Click"
+                        Content="Cancel"/>
+
+                <Button Grid.Column="4"
+                        Width="110"
+                        Height="36"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        IsDefault="True"
+                        Click="ContinueButton_Click"
+                        Content="Continue"/>
+
+            </Grid>
+
+        </Border>
+
+    </Grid>
+
+</Window>
