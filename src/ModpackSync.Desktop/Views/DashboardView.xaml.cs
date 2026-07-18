@@ -219,18 +219,20 @@ public partial class DashboardView : UserControl
                 .Settings
                 .InstancesDirectory;
 
-        if (!string.IsNullOrWhiteSpace(
-        selectedPath))
+        if (string.IsNullOrWhiteSpace(instancesDirectory))
         {
-            SelectInstanceByPath(
-                selectedPath);
+            _instancesView.Refresh();
+            UpdateActionButtons();
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedPath))
+        {
+            SelectInstanceByPath(selectedPath);
         }
 
         _instancesView.Refresh();
-
         UpdateActionButtons();
-
-        await Task.CompletedTask;
 
         IReadOnlyList<LauncherInstance> discoveredInstances =
             _instanceDiscoveryService.Discover(
@@ -383,12 +385,33 @@ public partial class DashboardView : UserControl
                 return;
             }
 
+            var contentDialog =
+    new SelectPackContentWindow(
+        selectedItem.ManagedPack.LocalPath)
+    {
+        Owner =
+            Window.GetWindow(this)
+    };
+
+            bool? contentResult =
+                contentDialog.ShowDialog();
+
+            if (contentResult != true)
+            {
+                SetBusyState(
+                    false,
+                    "Version creation cancelled.");
+
+                return;
+            }
+
             SetBusyState(
                 true,
                 $"Creating version {dialog.VersionLabel}...");
 
             await _packManager.ScanPackAsync(
-                selectedItem.ManagedPack.Id);
+                selectedItem.ManagedPack.Id,
+                contentDialog.Selection);
 
             PackVersion version =
                 await _versionManager.CreateVersionAsync(
@@ -507,12 +530,25 @@ public partial class DashboardView : UserControl
 
             int uploadedCount = 0;
 
+            var failedFiles =
+                new List<(ManifestFile File, string Reason)>();
+
+            var successfulFiles =
+                new List<ManifestFile>();
+
             foreach (ManifestFile manifestFile
-         in manifest.Files)
+                     in manifest.Files)
             {
+                /*
+                 * The server already has this blob, so it is safe to keep
+                 * the file in the version manifest.
+                 */
                 if (!missingHashes.Contains(
                         manifestFile.Sha256))
                 {
+                    successfulFiles.Add(
+                        manifestFile);
+
                     continue;
                 }
 
@@ -523,10 +559,13 @@ public partial class DashboardView : UserControl
 
                 if (!File.Exists(sourcePath))
                 {
-                    throw new FileNotFoundException(
-                        $"A manifest file could not be found: " +
-                        $"{manifestFile.RelativePath}",
-                        sourcePath);
+                    failedFiles.Add(
+                        (
+                            manifestFile,
+                            "The local file could not be found."
+                        ));
+
+                    continue;
                 }
 
                 uploadedCount++;
@@ -538,9 +577,23 @@ public partial class DashboardView : UserControl
                     $"{missingHashes.Count}: " +
                     $"{manifestFile.RelativePath}");
 
-                await UploadFileAsync(
-                    manifestFile.Sha256,
-                    sourcePath);
+                try
+                {
+                    await UploadFileAsync(
+                        manifestFile.Sha256,
+                        sourcePath);
+
+                    successfulFiles.Add(
+                        manifestFile);
+                }
+                catch (Exception ex)
+                {
+                    failedFiles.Add(
+                        (
+                            manifestFile,
+                            ex.Message
+                        ));
+                }
             }
 
             ShowIndeterminateProgress(
@@ -548,7 +601,46 @@ public partial class DashboardView : UserControl
 
             await AttachVersionFilesAsync(
                 serverVersion.Id,
-                manifest.Files);
+                successfulFiles);
+
+            if (failedFiles.Count > 0)
+            {
+                const int maximumDisplayedFailures =
+                    20;
+
+                string failedFileList =
+                    string.Join(
+                        Environment.NewLine,
+                        failedFiles
+                            .Take(maximumDisplayedFailures)
+                            .Select(
+                                failure =>
+                                    $"• {failure.File.RelativePath}" +
+                                    $"{Environment.NewLine}  " +
+                                    failure.Reason));
+
+                if (failedFiles.Count >
+                    maximumDisplayedFailures)
+                {
+                    failedFileList +=
+                        $"{Environment.NewLine}{Environment.NewLine}" +
+                        $"...and " +
+                        $"{failedFiles.Count - maximumDisplayedFailures} " +
+                        $"more files.";
+                }
+
+                MessageBox.Show(
+                    $"The upload completed with skipped files." +
+                    $"{Environment.NewLine}{Environment.NewLine}" +
+                    $"Included files: {successfulFiles.Count}" +
+                    $"{Environment.NewLine}" +
+                    $"Skipped files: {failedFiles.Count}" +
+                    $"{Environment.NewLine}{Environment.NewLine}" +
+                    failedFileList,
+                    "Upload Completed with Warnings",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
 
             SetBusyState(
                 false,
