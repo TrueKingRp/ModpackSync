@@ -1,5 +1,5 @@
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using ModpackSync.Contracts.Server.Versions;
 using ModpackSync.Server.Services;
 
@@ -10,15 +10,18 @@ namespace ModpackSync.Server.Controllers;
 public sealed class VersionFilesController :
     ControllerBase
 {
-    private readonly IVersionFileService _versionFileService;
+    private const int MaximumFilesPerVersion =
+        20_000;
+
+    private readonly IVersionManifestQueue _manifestQueue;
     private readonly ILogger<VersionFilesController> _logger;
 
     public VersionFilesController(
-        IVersionFileService versionFileService,
+        IVersionManifestQueue manifestQueue,
         ILogger<VersionFilesController> logger)
     {
-        _versionFileService =
-            versionFileService;
+        _manifestQueue =
+            manifestQueue;
 
         _logger =
             logger;
@@ -26,98 +29,106 @@ public sealed class VersionFilesController :
 
     [HttpPut]
     [ProducesResponseType(
-        typeof(ReplaceVersionFilesResponse),
-        StatusCodes.Status200OK)]
+        StatusCodes.Status202Accepted)]
     [ProducesResponseType(
         StatusCodes.Status400BadRequest)]
     [ProducesResponseType(
-        StatusCodes.Status404NotFound)]
-    [ProducesResponseType(
-        StatusCodes.Status409Conflict)]
-    [ProducesResponseType(
-        StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ReplaceVersionFilesResponse>>
-        ReplaceAsync(
-            Guid versionId,
-            [FromBody] ReplaceVersionFilesRequest request,
-            CancellationToken cancellationToken)
+        StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> ReplaceAsync(
+        Guid versionId,
+        [FromBody] ReplaceVersionFilesRequest request,
+        CancellationToken cancellationToken)
     {
+        if (request is null ||
+            request.Files is null)
+        {
+            return BadRequest(
+                new
+                {
+                    code =
+                        "file_list_required",
+
+                    message =
+                        "A file list is required."
+                });
+        }
+
+        if (request.Files.Count >
+            MaximumFilesPerVersion)
+        {
+            return BadRequest(
+                new
+                {
+                    code =
+                        "too_many_files",
+
+                    message =
+                        $"A version cannot contain more than " +
+                        $"{MaximumFilesPerVersion} files."
+                });
+        }
+
+        /*
+         * Copy the request into new objects before putting it into
+         * the background queue. This avoids retaining any objects
+         * associated with the HTTP request.
+         */
+        var queuedRequest =
+            new ReplaceVersionFilesRequest
+            {
+                Files =
+                    request.Files
+                        .Select(
+                            file =>
+                                new VersionFileItemRequest
+                                {
+                                    RelativePath =
+                                        file.RelativePath,
+
+                                    Sha256 =
+                                        file.Sha256,
+
+                                    Size =
+                                        file.Size
+                                })
+                        .ToList()
+            };
+
         try
         {
-            ReplaceVersionFilesResponse response =
-                await _versionFileService.ReplaceAsync(
+            await _manifestQueue.QueueAsync(
+                new VersionManifestJob(
                     versionId,
-                    request,
-                    cancellationToken);
-
-            return Ok(
-                response);
+                    queuedRequest),
+                cancellationToken);
         }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(
-                new
-                {
-                    code =
-                        "version_not_found",
-
-                    message =
-                        ex.Message
-                });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(
-                new
-                {
-                    code =
-                        "version_already_published",
-
-                    message =
-                        ex.Message
-                });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(
-                new
-                {
-                    code =
-                        "invalid_file_list",
-
-                    message =
-                        ex.Message
-                });
-        }
-        catch (InvalidDataException ex)
-        {
-            return BadRequest(
-                new
-                {
-                    code =
-                        "file_validation_failed",
-
-                    message =
-                        ex.Message
-                });
-        }
-        catch (DbUpdateException ex)
+        catch (ChannelClosedException ex)
         {
             _logger.LogError(
                 ex,
-                "A database error occurred while replacing files for version {VersionId}.",
-                versionId);
+                "The manifest queue is unavailable.");
 
             return StatusCode(
-                StatusCodes.Status500InternalServerError,
+                StatusCodes.Status503ServiceUnavailable,
                 new
                 {
                     code =
-                        "database_error",
+                        "manifest_queue_unavailable",
 
                     message =
-                        "The version file list could not be saved."
+                        "The manifest could not be queued."
                 });
         }
+
+        return Accepted(
+            new
+            {
+                versionId,
+                status =
+                    "processing",
+
+                fileCount =
+                    queuedRequest.Files.Count
+            });
     }
 }

@@ -22,29 +22,73 @@
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="18"/>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel>
+            <!-- Page title -->
+            <StackPanel Grid.Column="0"
+                VerticalAlignment="Center">
 
                 <TextBlock Text="Dashboard"
-                           FontSize="30"
-                           FontWeight="Bold"/>
+                   FontSize="30"
+                   FontWeight="Bold"/>
 
                 <TextBlock Margin="0,5,0,0"
-                           Text="Manage your local Prism Launcher modpacks."
-                           FontSize="13"
-                           Foreground="{StaticResource SecondaryTextBrush}"/>
+                   Text="Manage your local Prism Launcher modpacks."
+                   FontSize="13"
+                   Foreground="{StaticResource SecondaryTextBrush}"/>
 
             </StackPanel>
 
+            <!-- Pack search -->
+            <Grid Grid.Column="2"
+          VerticalAlignment="Center">
+
+                <TextBox x:Name="PackSearchTextBox"
+                 Height="38"
+                 Padding="12,0,36,0"
+                 VerticalContentAlignment="Center"
+                 ToolTip="Filter packs by name, folder or status"
+                 TextChanged="PackSearchTextBox_TextChanged"/>
+
+                <TextBlock x:Name="SearchPlaceholderTextBlock"
+                   Margin="13,0,38,0"
+                   VerticalAlignment="Center"
+                   IsHitTestVisible="False"
+                   Text="Search packs..."
+                   FontSize="12"
+                   Foreground="{StaticResource SecondaryTextBrush}"/>
+
+                <Button x:Name="ClearSearchButton"
+                Width="28"
+                Height="28"
+                Margin="0,0,4,0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Padding="0"
+                BorderThickness="0"
+                Background="Transparent"
+                Foreground="{StaticResource SecondaryTextBrush}"
+                Content="×"
+                FontSize="18"
+                ToolTip="Clear search"
+                Visibility="Collapsed"
+                Click="ClearSearchButton_Click"/>
+
+            </Grid>
+
+            <!-- Refresh packs -->
             <Button x:Name="RefreshButton"
-                    Grid.Column="1"
-                    MinWidth="110"
-                    Height="38"
-                    Style="{StaticResource StandardButtonStyle}"
-                    Content="Refresh"
-                    Click="RefreshButton_Click"/>
+            Grid.Column="4"
+            MinWidth="110"
+            Height="38"
+            VerticalAlignment="Center"
+            Style="{StaticResource StandardButtonStyle}"
+            Content="Refresh"
+            Click="RefreshButton_Click"/>
 
         </Grid>
 
@@ -267,11 +311,11 @@
 
         <!-- Status bar -->
         <Border Grid.Row="8"
-                Padding="13,10"
-                Background="{StaticResource PanelBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="1"
-                CornerRadius="6">
+        Padding="13,10"
+        Background="{StaticResource PanelBrush}"
+        BorderBrush="{StaticResource BorderBrush}"
+        BorderThickness="1"
+        CornerRadius="6">
 
             <Grid>
 
@@ -279,21 +323,32 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="10"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="220"/>
                 </Grid.ColumnDefinitions>
 
                 <Ellipse Grid.Column="0"
-                         Width="8"
-                         Height="8"
-                         VerticalAlignment="Center"
-                         Fill="{StaticResource PrimaryBrush}"/>
+                 Width="8"
+                 Height="8"
+                 VerticalAlignment="Center"
+                 Fill="{StaticResource PrimaryBrush}"/>
 
                 <TextBlock x:Name="StatusTextBlock"
-                           Grid.Column="2"
-                           VerticalAlignment="Center"
-                           Text="Ready."
-                           FontSize="12"
-                           Foreground="{StaticResource SecondaryTextBrush}"
-                           TextWrapping="Wrap"/>
+                   Grid.Column="2"
+                   VerticalAlignment="Center"
+                   Text="Ready."
+                   FontSize="12"
+                   Foreground="{StaticResource SecondaryTextBrush}"
+                   TextWrapping="Wrap"/>
+
+                <ProgressBar x:Name="OperationProgressBar"
+                     Grid.Column="4"
+                     Height="12"
+                     VerticalAlignment="Center"
+                     Minimum="0"
+                     Maximum="100"
+                     Value="0"
+                     Visibility="Collapsed"/>
 
             </Grid>
 

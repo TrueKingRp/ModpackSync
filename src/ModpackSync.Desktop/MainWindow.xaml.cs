@@ -10,6 +10,7 @@ public partial class MainWindow : Window
 {
     private readonly DashboardView _dashboardView;
     private readonly SettingsView _settingsView;
+    private readonly ServerBrowserView _serverBrowserView;
 
     public MainWindow()
     {
@@ -27,6 +28,9 @@ public partial class MainWindow : Window
         _settingsView.ConnectionStatusChanged +=
             SettingsView_ConnectionStatusChanged;
 
+        _serverBrowserView =
+    new ServerBrowserView();
+
         ShowDashboard();
     }
 
@@ -35,6 +39,22 @@ public partial class MainWindow : Window
         RoutedEventArgs e)
     {
         ShowDashboard();
+    }
+
+    private void ServerNavigationButton_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        ShowServer();
+    }
+
+    private void ShowServer()
+    {
+        MainContentHost.Content =
+            _serverBrowserView;
+
+        SetNavigationSelection(
+            ServerNavigationButton);
     }
 
     private void VersionsNavigationButton_Click(
@@ -130,6 +150,7 @@ public partial class MainWindow : Window
         [
             DashboardNavigationButton,
             VersionsNavigationButton,
+            ServerNavigationButton,
             SettingsNavigationButton
         ];
 

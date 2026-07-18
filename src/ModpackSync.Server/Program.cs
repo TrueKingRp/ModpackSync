@@ -103,6 +103,13 @@ builder.Services.AddScoped<
     IVersionArchiveService,
     VersionArchiveService>();
 
+builder.Services.AddSingleton<
+    IVersionManifestQueue,
+    VersionManifestQueue>();
+
+builder.Services.AddHostedService<
+    VersionManifestWorker>();
+
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
